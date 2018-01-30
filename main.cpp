@@ -176,7 +176,6 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
 
 int main(int argc, char* argv[]) {
 
-
     CLParser parser(argc,argv, true);
     char psw[strlen(parser.get_arg(1).c_str())];
     char salt[2];
@@ -210,6 +209,8 @@ int main(int argc, char* argv[]) {
         printf("\n-----SELECTED MODE: BRUTEFORCE-----\n\n");
         time_passed = bruteForce_attack(psw,salt,n_threads);
     }
+
+    //Write computation timings into times.txt file
     std::ofstream outfile;
     outfile.open("times.txt",std::ios_base::app);
     outfile << "\n"<<time_passed;
