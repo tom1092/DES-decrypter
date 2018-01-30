@@ -146,18 +146,18 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
             generateCombination(test, k, i);
 
             //Convert test to char array
-            for (int i =0;i<k;i++){
-                sprintf(&(comb[i]), "%d", test[i]);
+            for (int j =0;j<k;j++){
+                sprintf(&(comb[j]), "%d", test[j]);
             }
 
             strncpy(attack_psw,comb,strlen(psw)); //copy only the password
             attack_salt[0] = comb[strlen(comb)-strlen(salt)]; //take first salt digit
             attack_salt[1] = comb[strlen(comb)-strlen(salt)+1]; //take second salt digit
 
-            //uncomment under line to view all combination tested
-            //printf("\nThread %d test the string %s", omp_get_thread_num(), comb);
-
             crypt(attack_psw, attack_salt,guess);
+
+            //uncomment under line to view all combination tested
+            printf("\nThread %d test the string %s -> %s", omp_get_thread_num(), comb, guess);
 
             if (strcmp(guess,crypted)==0) {
                 auto end = std::chrono::steady_clock::now();
