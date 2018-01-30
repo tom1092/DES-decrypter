@@ -7,7 +7,7 @@
 
 
 /*-***********************
-* Dependencies
+*   Dependencies
 *************************/
 #include <omp.h>
 #include <chrono>
@@ -18,15 +18,40 @@
 #include "crypt3.h"
 
 /*-***********************
-* Constants
+*   Constants
 *************************/
 
-#define BYTEPSWCRYPTED 16
-#define SALTLENGTH 2
+#define BYTE_PSW_CRYPTED 16
+#define SALT_LENGTH 2
+#define N_SYMBOLS 10 //The number of accepted symbols for the bruteforce ([0...9])
+
+
+/*-***********************
+*   Functions declarations
+*************************/
+
 
 double dictionary_attack(char* psw, char * salt, const std::string& dict_path, const int& n_threads, const bool& random);
 double bruteForce_attack(char *psw, char *salt, const int& n_threads);
-int myrandom (int i) { return std::rand()%i;}
+inline int myrandom (int i) { return std::rand()%i;}
+void getStringDictionary(std::vector<std::string>& dictionary, const std::string& dict_path, const bool& random);
+void generateCombination(int v[], int k, int i);
+
+
+
+
+/**
+ * Given an index i generate a k-characters combination and save it in v[] array
+ */
+void generateCombination(int v[], int k, int i){
+    for (int j=0; j<(k-1);j++){
+        v[j] = i / (int)(pow((double) N_SYMBOLS ,(double)((k-1)-j)));
+        i = i % (int)(pow((double) N_SYMBOLS ,(double)((k-1)-j)));
+    }
+    v[k-1] = i % N_SYMBOLS;
+}
+
+
 
 /**
  * Get the dictionary located in dict_path randomizing final items if required
@@ -52,6 +77,7 @@ void getStringDictionary(std::vector<std::string>& dictionary, const std::string
     }
 }
 
+
 /**
  * Performs a dictionary attack to find the password passed by argument
  * @param psw the password
@@ -62,10 +88,10 @@ void getStringDictionary(std::vector<std::string>& dictionary, const std::string
  * @return the time passed to find the password
  */
 double dictionary_attack(char* psw, char * salt, const std::string& dict_path, const int& n_threads, const bool& random){
+
     std::vector<std::string> dictionary;
     getStringDictionary(dictionary, dict_path, random);
-
-    char crypted[BYTEPSWCRYPTED];
+    char crypted[BYTE_PSW_CRYPTED];
     crypt(psw,salt,crypted);
 
     printf("Password crypted: %s", crypted);
@@ -77,7 +103,7 @@ double dictionary_attack(char* psw, char * salt, const std::string& dict_path, c
 #   pragma omp parallel num_threads(n_threads)
     {
         char* comb = (char*)malloc(8);
-        char guess[BYTEPSWCRYPTED];
+        char guess[BYTE_PSW_CRYPTED];
 
 #       pragma omp for schedule(static)
         for(int i = 0;i<dictionary.size(); i++) {
@@ -99,16 +125,6 @@ double dictionary_attack(char* psw, char * salt, const std::string& dict_path, c
     return timePassed.count();
 }
 
-/**
- * Given an index i generate a k-characters combination and save it in v[] array
- */
-void generateCombination(int v[], int k, int i){
-    for (int j=0; j<(k-1);j++){
-        v[j] = i / (int)(pow(10. ,(double)((k-1)-j)));
-        i = i % (int)(pow(10. ,(double)((k-1)-j)));
-    }
-    v[k-1] = i % 10;
-}
 
 
 /**
@@ -123,9 +139,10 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
     int k = strlen(psw) + strlen(salt);
     char symbols[] = "0123456789";
     int n = strlen(symbols);
-    char crypted[BYTEPSWCRYPTED];
+    char crypted[BYTE_PSW_CRYPTED];
     long size = (long)pow((double)n,(double)k);
     crypt(psw,salt,crypted);
+
     printf("Password crypted: %s", crypted);
     printf("\n\nSearching...\n");
 
@@ -137,8 +154,8 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
         int test[k];
         char* comb = (char*)malloc(k);
         char* attack_psw = (char*)malloc(strlen(psw));
-        char attack_salt[SALTLENGTH];
-        char guess[BYTEPSWCRYPTED];
+        char attack_salt[SALT_LENGTH];
+        char guess[BYTE_PSW_CRYPTED];
 
 #       pragma omp for schedule(static)
         for(int i=0; i<size; i++){
@@ -146,7 +163,7 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
             generateCombination(test, k, i);
 
             //Convert test to char array
-            for (int j =0;j<k;j++){
+            for (int j =0; j<k; j++){
                 sprintf(&(comb[j]), "%d", test[j]);
             }
 
@@ -154,10 +171,10 @@ double bruteForce_attack(char *psw, char *salt, const int& n_threads) {
             attack_salt[0] = comb[strlen(comb)-strlen(salt)]; //take first salt digit
             attack_salt[1] = comb[strlen(comb)-strlen(salt)+1]; //take second salt digit
 
-            crypt(attack_psw, attack_salt,guess);
-
             //uncomment under line to view all combination tested
-            printf("\nThread %d test the string %s -> %s", omp_get_thread_num(), comb, guess);
+            //printf("\nThread %d test the string %s", omp_get_thread_num(), comb);
+
+            crypt(attack_psw, attack_salt,guess);
 
             if (strcmp(guess,crypted)==0) {
                 auto end = std::chrono::steady_clock::now();
@@ -179,7 +196,7 @@ int main(int argc, char* argv[]) {
     CLParser parser(argc,argv, true);
     char psw[strlen(parser.get_arg(1).c_str())];
     char salt[2];
-    int n_threads = (omp_get_num_procs()/2)*3;
+    int n_threads = omp_get_num_procs();
     std::string path;
     double time_passed;
 
@@ -189,13 +206,15 @@ int main(int argc, char* argv[]) {
         printf("ompDES_cracker    <8 characters password> <2 characters salt> [Options]\n\n");
         printf("OPTIONS:\n");
         printf("-d    <dictionary_path>:   Enable dictionary attack (default: brute force attack)\n");
-        printf("-nt   <num_threads>:       Set the number of threads (default: number of logical cores * 1.5)\n");
+        printf("-nt   <num_threads>:       Set the number of threads (default: number of logical cores)\n");
         printf("-r                         Randomize attempts (only for dictionary) \n\n");
         return 0;
 
     }
+
     strcpy(psw,parser.get_arg(1).c_str());
     strcpy(salt,parser.get_arg(2).c_str());
+
     if (parser.get_arg("-nt")!=""){
         n_threads = atoi(parser.get_arg("-nt").c_str());
     }
@@ -210,11 +229,6 @@ int main(int argc, char* argv[]) {
         time_passed = bruteForce_attack(psw,salt,n_threads);
     }
 
-    //Write computation timings into times.txt file
-    std::ofstream outfile;
-    outfile.open("times.txt",std::ios_base::app);
-    outfile << "\n"<<time_passed;
 
-    printf("\n\n");
     return 0;
 }
