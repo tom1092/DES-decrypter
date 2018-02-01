@@ -9,5 +9,5 @@ Help inline: ./ompDES_cracker --help
 Example usage: ./ompDES_cracker 23101995 10 -d dictionary.txt -nt 8 -r
 
 Authors:
-* Niccolò Bellaccini nicco.b.93@gmail.com https://github.com/kinik93
-* Tommaso Aldinucci tommaso.aldinucci@icloud.com https://github.com/tom1092
+* Niccolò Bellaccini, nicco.b.93@gmail.com, https://github.com/kinik93
+* Tommaso Aldinucci, tommaso.aldinucci@icloud.com, https://github.com/tom1092
