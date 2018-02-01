@@ -1,6 +1,6 @@
 # DES-decrypter
 
-Full description of this project is provided in "DES descryption.pdf"
+A full description of this project is provided in "DES descryption.pdf"
 
 Compile with: clang++ main.cpp crypt3.cpp --std=c++11 -fopenmp -o ompDES_cracker 
 
