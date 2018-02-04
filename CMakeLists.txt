@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(ompDES_cracker)
+project(DES-decrypter)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
